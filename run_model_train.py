@@ -182,12 +182,12 @@ def setup_training_environment(cfg):
 
 
 def main() :
-    # import argparse
-    # parser = argparse.ArgumentParser(description="Train EncodeProcessDecode model")
-    # parser.add_argument('--config', type=str, default="train_config.yml", help="Path to the config YAML file")
-    # args = parser.parse_args()
-    config_dir = "/mnt/c/Users/narun/OneDrive/Desktop/Project/MGN_ADM/train_configs/hydrogel2D_config.yml"
-    cfg = load_config(config_dir)
+    import argparse
+    parser = argparse.ArgumentParser(description="Train EncodeProcessDecode model")
+    parser.add_argument('--config', type=str, default="train_config.yml", help="Path to the config YAML file")
+    args = parser.parse_args()
+    # config_dir = "/mnt/c/Users/narun/OneDrive/Desktop/Project/MGN_ADM/train_configs/hydrogel2D_config.yml"
+    cfg = load_config(args.config)
     model, optimizer, train_dataset, val_dataset, run_dir, model_dir, logs_dir, cfg, device = setup_training_environment(cfg)
 
     train(model, train_dataset, val_dataset, optimizer, run_dir, model_dir, logs_dir, cfg, device)

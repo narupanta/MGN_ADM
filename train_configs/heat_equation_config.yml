@@ -1,0 +1,33 @@
+# train_config.yml
+
+device: "cuda"
+
+paths:
+  data_dir: null
+  model_load_dir: null
+  model_save_dir: null
+  rollout_dir: null
+training:
+  num_epochs: 3
+  learning_rate: 5e-5
+  weight_decay: 5e-3
+  time_window: 1
+  message_passing_steps: 15
+  attention: True
+  target_config:
+    world_pos:
+      dimension: 2
+      noise: 0.1
+    pvf:
+      dimension: 1
+      noise: 0.1
+
+rollout:
+
+model:
+  name: null
+  node_feature_size: 11
+  mesh_edge_feature_size: 7
+  output_size: 3
+  latent_size: 128
+  timestep: 1e-5

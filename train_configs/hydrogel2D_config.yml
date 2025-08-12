@@ -1,0 +1,21 @@
+# train_config.yml
+
+device: "cuda"
+
+paths:
+  data_dir: "/mnt/c/Users/narun/OneDrive/Desktop/Project/MGN_ADM/datasets/hydrogel"
+  model_load_dir: null
+  model_save_dir: /mnt/c/Users/narun/OneDrive/Desktop/Project/MGN_ADM/trained_models/hydrogel2D
+training:
+  num_epochs: 3
+  learning_rate: 5e-5
+  weight_decay: 5e-3
+model:
+  latent_size: 128
+  timestep: 1e-5
+  time_window: 3
+  message_passing_steps: 15
+  include_push_forward: true
+  voxel_size: null
+
+

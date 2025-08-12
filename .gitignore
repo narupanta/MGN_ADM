@@ -1,3 +1,7 @@
 /datasets
 /notebook.ipynb
 /rollouts
+*.sh
+*.yml
+*.yaml
+slurm*

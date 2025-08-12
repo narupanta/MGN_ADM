@@ -135,7 +135,7 @@ class EncodeProcessDecode(torch.nn.Module):
                 norm_u_dot_prev = self._forward(graph.mesh_pos, graph.senders, graph.receivers, graph.node_type, 
                                             graph.u_prev, graph.load_prev)
             u_dot_prev = self.output_normalizer.inverse(norm_u_dot_prev)[0]
-            pred_u = graph.u_prev + u_dot_prev * self.timestep
+            pred_u = graph.u_prev + u_dot_prev
             delta_u = self._forward(graph.mesh_pos, graph.senders, graph.receivers, graph.node_type, 
                                     pred_u, graph.load)
         else :
@@ -147,8 +147,7 @@ class EncodeProcessDecode(torch.nn.Module):
         self.eval()
         node_type = graph.node_type
         output = self._forward(graph.mesh_pos, graph.senders, graph.receivers, node_type, graph.u, graph.load)
-        pred_u_dot = self.output_normalizer.inverse(output)
-        delta_u = pred_u_dot * self.time_window
+        delta_u = self.output_normalizer.inverse(output)
         for name, dim_idx, bc_node_type in u_metadata:
             # Mask out nodes that are Dirichlet BC for this component
             mask = (node_type[:, :, bc_node_type] == 1).squeeze(0)
@@ -164,7 +163,7 @@ class EncodeProcessDecode(torch.nn.Module):
         u_curr = graph.u            # (1, num_nodes, dim)
         u_target = graph.u_target   # (1, num_nodes, dim)
 
-        target_u_dot = (u_target - u_curr) / self.timestep
+        target_u_dot = (u_target - u_curr)
         normalized_target_delta_u = self.output_normalizer(target_u_dot)
 
         # error shape: (1, num_nodes, dim)

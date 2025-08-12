@@ -42,8 +42,8 @@ def rollout(model, data, metadata, device="cuda"):
     pred_u_tensor = torch.cat(pred_u_list, dim=0)[:timesteps]
     gt_u_tensor = data.u
 
-    min_vals = torch.amin(pred_u_tensor, dim=(0, 1), keepdim=True)  # shape: (1, 1, 3)
-    max_vals = torch.amax(pred_u_tensor, dim=(0, 1), keepdim=True)  # shape: (1, 1, 3)
+    min_vals = torch.amin(pred_u_tensor, dim = (0,1))  # shape: (1, 1, 3)
+    max_vals = torch.amax(pred_u_tensor, dim = (0,1))  # shape: (1, 1, 3)
 
     # Normalize per dimension
     norm_pred = (pred_u_tensor - min_vals) / (max_vals - min_vals + 1e-8)  # Add epsilon to avoid div by 0
@@ -52,7 +52,8 @@ def rollout(model, data, metadata, device="cuda"):
     min_vals_gt = torch.amin(gt_u_tensor, dim=(0, 1), keepdim=True)
     max_vals_gt = torch.amax(gt_u_tensor, dim=(0, 1), keepdim=True)
     norm_gt = (gt_u_tensor - min_vals_gt) / (max_vals_gt - min_vals_gt + 1e-8)
-
+    rmse_per_frame = torch.sqrt(torch.mean((pred_u_tensor - gt_u_tensor)**2, dim = 1))
+    rmse_per_trajectory = torch.mean(rmse_per_frame, dim = 0)
     rel_rmse_per_frame = torch.sqrt(torch.mean((norm_pred - norm_gt)**2, dim = 1))
     rel_rmse_trajectory = torch.mean(rel_rmse_per_frame, dim = 0)
     output = {"mesh_pos": initial_state.mesh_pos.squeeze(0),
@@ -62,5 +63,7 @@ def rollout(model, data, metadata, device="cuda"):
         output[target] = pred_u_tensor[:, :, index]
         output[f"{target}_rel_rmse_per_frame"] = rel_rmse_per_frame[:, index]
         output[f"{target}_rel_rmse_trajectory"] = rel_rmse_trajectory[index]
+        output[f"{target}__rmse_per_frame"] = rmse_per_frame[:, index]
+        output[f"{target}__rmse_trajectory"] = rmse_per_trajectory[index]
 
     return output

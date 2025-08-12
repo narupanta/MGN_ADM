@@ -98,12 +98,14 @@ def train(model, train_dataset, val_dataset, optimizer, run_dir, model_dir, logs
             for traj_idx, trajectory in enumerate(val_dataset):
                 output = rollout(model, trajectory, train_dataset.u_metadata, device)
                 val_loss = 0.0
+                val_i = 0
                 val_traj_loss_split = {}
                 for k, v in output.items() :
-                    if k.endswith("_rel_rmse_trajectory") :
+                    if k.endswith("__rmse_trajectory") :
                         val_loss += v
+                        val_i += 1
                         val_traj_loss_split[f"Rollout {k}"] = v
-                val_total_loss += val_loss.item()
+                val_total_loss += val_loss.item()/val_i
                 val_loss_str = ", ".join(f"{k}: {v:.4f}" for k, v in val_traj_loss_split.items())
                 logger.info(
                     f"Rollout Trajectory {traj_idx + 1}: Rollout RMSE: {val_loss:.6e}, {val_loss_str}"

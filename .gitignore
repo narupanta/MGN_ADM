@@ -1,3 +1,5 @@
 /datasets
 /notebook.ipynb
 /rollouts
+/trained_models
+*.yml

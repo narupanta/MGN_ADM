@@ -50,7 +50,7 @@ def train(model, train_dataset, val_dataset, optimizer, run_dir, model_dir, logs
 
         for traj_idx, trajectory in enumerate(train_dataset):
             traj_total_loss = 0
-            traj_loss_split = {f"{target_name} loss" : 0.0 for target_name, _, _ in train_dataset.u_metadata}
+            traj_loss_split = {f"{target_name} loss" : 0.0 for target_name, _, _, _ in train_dataset.u_metadata}
             train_loader = DataLoader(trajectory, batch_size=1, shuffle=True)
             loop = tqdm(train_loader, leave=False)
 
@@ -159,9 +159,10 @@ def setup_training_environment(cfg):
         config_summary_path = os.path.join(run_dir, "config_summary.yaml")
         with open(config_summary_path, "w") as f:
             yaml.dump(cfg, f, default_flow_style=False, sort_keys=False)
-
+    noise_level = cfg["training"]["noise_level"]
     train_dataset = DatasetMGN(paths["data_dir"], 
                                time_window = cfg["model"]["time_window"],
+                               noise_level = noise_level,
                                split_frames = True)
 
     val_dataset = DatasetMGN(paths["data_dir"], 
@@ -184,7 +185,7 @@ def setup_training_environment(cfg):
 def main() :
     import argparse
     parser = argparse.ArgumentParser(description="Train EncodeProcessDecode model")
-    parser.add_argument('--config', type=str, default="train_config.yml", help="Path to the config YAML file")
+    parser.add_argument('--config', type=str, default="./train_configs/hydrogel2D_config.yml", help="Path to the config YAML file")
     args = parser.parse_args()
     # config_dir = "/mnt/c/Users/narun/OneDrive/Desktop/Project/MGN_ADM/train_configs/hydrogel2D_config.yml"
     cfg = load_config(args.config)

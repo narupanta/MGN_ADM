@@ -148,7 +148,7 @@ class EncodeProcessDecode(torch.nn.Module):
         node_type = graph.node_type
         output = self._forward(graph.mesh_pos, graph.senders, graph.receivers, node_type, graph.u, graph.load)
         delta_u = self.output_normalizer.inverse(output)
-        for name, dim_idx, bc_node_type in u_metadata:
+        for _, dim_idx, bc_node_type, _ in u_metadata:
             # Mask out nodes that are Dirichlet BC for this component
             mask = (node_type[:, :, bc_node_type] == 1).squeeze(0)
             delta_u[:, mask, dim_idx] = 0
@@ -172,7 +172,7 @@ class EncodeProcessDecode(torch.nn.Module):
         loss_dict = {}
         comp_losses = []
 
-        for name, dim_idx, bc_node_type in u_metadata:
+        for name, dim_idx, bc_node_type, _ in u_metadata:
             # Mask out nodes that are Dirichlet BC for this component
             mask = ~(node_type[:, :, bc_node_type] == 1).squeeze(0)
             masked_error = error[:, mask, dim_idx]

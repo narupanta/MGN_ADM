@@ -22,14 +22,14 @@ def get_target_metadata(data_config):
     for v in target_names:
         target_dim = targets[v]["dim"]
         dbc_map = targets[v].get("dbc_at_node_type", {})
-
+        frame_type = targets[v].get("frame", "fixed")
         for i in range(target_dim):
             quantity_name = f"{v}_{i}"
             if i in dbc_map.values():
                 # Add an entry for each matching node type
                 for node_type, comp_idx in dbc_map.items():
                     if comp_idx == i:
-                        u_metadata.append((quantity_name, dim_count, node_type))
+                        u_metadata.append((quantity_name, dim_count, node_type, frame_type))
             dim_count += 1
 
     return u_metadata
@@ -67,7 +67,7 @@ class DatasetMGN(Dataset):
         add_targets=True,
         add_history=False,
         split_frames=True,
-        add_noise=True,
+        noise_level=0.0,
         train_test_split= "train",
         time_window=1
     ):
@@ -76,7 +76,7 @@ class DatasetMGN(Dataset):
         self.add_targets = add_targets
         self.add_history = add_history
         self.split_frames = split_frames
-        self.add_noise = add_noise
+        self.noise_level = noise_level
         self.time_window = time_window
         self.data_config = load_config(os.path.join(self.data_dir, "data_config.yml"))
         self.u_metadata = get_target_metadata(self.data_config)
@@ -123,6 +123,7 @@ class DatasetMGN(Dataset):
         #split into frames
         if self.split_frames :
             frames = []
+            u_curr_noised = add_noise(u_curr, self.noise_level, mesh_pos, senders, receivers, self.u_metadata)
             for t in range(u_curr.shape[0]) :
                 frame_data = {
                         "mesh_pos": mesh_pos.unsqueeze(0),
@@ -131,7 +132,7 @@ class DatasetMGN(Dataset):
                         "cells": cells.unsqueeze(0),
                         "node_type": node_type.unsqueeze(0),
 
-                        "u" : u_curr[t].unsqueeze(0), # shape (1, #nodes, #u_dim)
+                        "u" : u_curr_noised[t].unsqueeze(0), # shape (1, #nodes, #u_dim)
                         "u_prev": u_prev[t].unsqueeze(0), # shape (1, #nodes, #u_dim)
                         "u_target" : u_target[t], # shape (time_window, #nodes, #u_dim)
 
@@ -139,6 +140,7 @@ class DatasetMGN(Dataset):
                         "load_prev" : load_prev[t].unsqueeze(0), # shape (1, #nodes, #load_dim)
                         "load_next": load_next[t] # shape (time_window, #nodes, #load_dim)
                     }
+                
                 frames.append(Data(**frame_data))
             return frames
         
@@ -146,3 +148,14 @@ class DatasetMGN(Dataset):
 
     def get_name(self, idx):
         return self.file_name_list[idx]
+def add_noise(data, noise_level, mesh_pos, senders, receivers, metadata) :
+    for _, index, _, frame_type in metadata :
+        if frame_type == "move" :
+            edge_lengths = (mesh_pos[senders] - mesh_pos[receivers]).norm(dim=-1)
+            avg_edge_length = edge_lengths.mean()
+            data[:, :, index] = data[:, :, index] + avg_edge_length * noise_level * torch.randn_like(data[:, :, index])
+        elif frame_type == "fixed" :
+            data[:, :, index] = data[:, :, index] + data[:, :, index].std() * noise_level * torch.randn_like(data[:, :, index])
+        else :
+            raise "frame_type invalid"
+    return data

@@ -33,7 +33,7 @@ from core.postprocessing import export_to_paraview
 def main():
     import argparse
     parser = argparse.ArgumentParser(description="Rollout EncodeProcessDecode model")
-    parser.add_argument('--config', type=str, default="/mnt/c/Users/narun/OneDrive/Desktop/Project/MGN_ADM/rollout_configs/lpbf3D_config.yml", help="Path to the config YAML file")
+    parser.add_argument('--config', type=str, default="/mnt/c/Users/narun/OneDrive/Desktop/Project/MGN_ADM/rollout_configs/hydrogel2D_config.yml", help="Path to the config YAML file")
     args = parser.parse_args()
 
     cfg = load_config(args.config)
@@ -67,10 +67,31 @@ def main():
 
     # Build and load model
     model = build_model(model_config, test_dataset.data_config, device)
+    model.eval()
+    # model = torch.compile(model)
+    # Loop through dataset
+    def check_model_params(model):
+        params = []
+        for name, param in model.named_parameters():
+            params.append((name, param.detach().cpu().clone()))
+        return params
+
+    # Example usage:
+    # Save snapshot before loading
+    before_params = check_model_params(model)
+
     model.load_model(model_load_dir / "model_checkpoint")
     model.eval()
-    model = torch.compile(model)
-    # Loop through dataset
+    # model = torch.compile(model)
+    after_params = check_model_params(model)
+
+    # Compare
+    for (name1, p_before), (name2, p_after) in zip(before_params, after_params):
+        if not torch.equal(p_before, p_after):
+            print(f"✅ Parameter '{name1}' changed after loading.")
+        else:
+            print(f"⚠️ Parameter '{name1}' did NOT change after loading.")
+    print("#parameters in the model:", sum(p.numel() for p in model.parameters()))
     for traj_idx in range(len(test_dataset)):
         data = test_dataset[traj_idx]
         x = test_dataset.get_name(traj_idx)

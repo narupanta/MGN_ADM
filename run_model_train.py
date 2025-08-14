@@ -185,7 +185,7 @@ def setup_training_environment(cfg):
 def main() :
     import argparse
     parser = argparse.ArgumentParser(description="Train EncodeProcessDecode model")
-    parser.add_argument('--config', type=str, default="./train_configs/lpbf3D_config.yml", help="Path to the config YAML file")
+    parser.add_argument('--config', type=str, default="./train_configs/hydrogel2D_config.yml", help="Path to the config YAML file")
     args = parser.parse_args()
     # config_dir = "/mnt/c/Users/narun/OneDrive/Desktop/Project/MGN_ADM/train_configs/hydrogel2D_config.yml"
     cfg = load_config(args.config)

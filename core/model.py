@@ -19,13 +19,13 @@ class Swish(torch.nn.Module):
     def forward(self, x):
         return x * torch.sigmoid(self.beta * x)
 class MLP(torch.nn.Module) :
-    def __init__(self, latent_size, device) :
+    def __init__(self, input_size, latent_size, device) :
         super().__init__()
-        
+        self.input_size = input_size
         self.latent_size = latent_size
         self.device = device
         self.mlp = Sequential(
-            LazyLinear(self.latent_size),
+            Linear(self.input_size, self.latent_size),
             ReLU(),
             Linear(self.latent_size, self.latent_size),
             ReLU(),
@@ -39,8 +39,8 @@ class GraphNetBlock(torch.nn.Module):
         super().__init__()
         self.latent_size = latent_size
         self.device = device
-        self.edge_feature_nets = [MLP(self.latent_size, device) for _ in range(graph_amount)]
-        self.node_feature_net = MLP(self.latent_size, device)
+        self.edge_feature_nets = torch.nn.ModuleList([MLP(latent_size * 3, self.latent_size, device) for _ in range(graph_amount)])
+        self.node_feature_net = MLP(latent_size * (1 + graph_amount), self.latent_size, device)
 
     def forward(self, graph):
         node_latents, edge_latents = graph.node_latents, graph.edge_latents
@@ -92,8 +92,8 @@ class EncodeProcessDecode(torch.nn.Module):
         self.target_dim = sum([v["dim"] for v in data_config["dynamic"]["target"].values()])
         self.load_dim = sum([v["dim"] for v in data_config["dynamic"]["load"].values()])
 
-        self.node_encoder = MLP(self.latent_size, device)
-        self.edge_encoder = MLP(self.latent_size, device)
+        self.node_encoder = MLP(self.target_dim + self.load_dim + self.node_type_dim, self.latent_size, device)
+        self.edge_encoder = MLP(self.mesh_pos_dim + self.target_dim + 1, self.latent_size, device)
         # Normalizers
         self.output_normalizer = Normalizer(time_window, self.target_dim, 'output_normalizer', device)
         self.node_normalizer = Normalizer(1, self.target_dim + self.load_dim + self.node_type_dim, 'node_features_normalizer', device)
@@ -101,7 +101,7 @@ class EncodeProcessDecode(torch.nn.Module):
         self.edge_normalizer = Normalizer(1, self.mesh_pos_dim + self.target_dim + 1, 'edge_normalizer', device)
         if self.voxel_size : 
             self.graph_amount = 2 
-            self.coarse_edge_encoder = MLP(self.latent_size, device)
+            self.coarse_edge_encoder = MLP(self.mesh_pos_dim + self.target_dim + 1, self.latent_size, device)
             self.coarse_edge_normalizer = Normalizer(1, self.mesh_pos_dim + self.target_dim + 1, 'coarse_edge_normalizer', device)
         # GNN core
         self.graphnet_blocks = torch.nn.ModuleList([
@@ -199,7 +199,7 @@ class EncodeProcessDecode(torch.nn.Module):
             torch.save(self.coarse_edge_normalizer, os.path.join(path, "coarse_edge_features_normalizer.pth"))
 
     def load_model(self, path):
-        self.load_state_dict(torch.load(os.path.join(path, "model_weights.pth"), weights_only=True))
+        self.load_state_dict(torch.load(os.path.join(path, "model_weights.pth")))
         self.output_normalizer = torch.load(os.path.join(path, "output_normalizer.pth"))
         self.node_normalizer = torch.load(os.path.join(path, "node_features_normalizer.pth"))
         self.edge_normalizer = torch.load(os.path.join(path, "edge_features_normalizer.pth"))

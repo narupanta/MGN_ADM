@@ -35,8 +35,7 @@ def rollout(model, data, metadata, device="cuda"):
         with torch.no_grad():
 
             curr_graph.load = data["load"][t].unsqueeze(0)
-            curr_graph.u = data["u"][t].unsqueeze(0)
-            # pred_u = model.predict(curr_graph.to(device), metadata)
+            # curr_graph.u = data["u"][t].unsqueeze(0)
             pred_u = model.predict(curr_graph.to(device), metadata)
             curr_graph.u = pred_u[-1:]  # advance to last prediction
         pred_u_list.append(pred_u)
@@ -61,7 +60,7 @@ def rollout(model, data, metadata, device="cuda"):
     output = {"mesh_pos": initial_state.mesh_pos.squeeze(0),
               "node_type": initial_state.node_type.squeeze(0),
               "cells": initial_state.cells}
-    for target, index, _ in metadata :
+    for target, index, _, _ in metadata :
         output[f"{target}_rel_rmse_per_frame"] = rel_rmse_per_frame[:, index]
         output[f"{target}_rel_rmse_trajectory"] = rel_rmse_trajectory[index]
         output[f"{target}__rmse_per_frame"] = rmse_per_frame[:, index]

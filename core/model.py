@@ -255,11 +255,14 @@ class EncodeProcessDecode(torch.nn.Module):
                 first_indices[i] = torch.nonzero(inverse_indices == i, as_tuple=False)[0]
 
             return points[:, first_indices, :], first_indices
-
+        if mesh_pos.shape[-1] == 3 :
+            k = 4
+        else :
+            k = 3
         voxel_size = self.voxel_size
         sampled_points, first_indices = voxel_grid_sampling(mesh_pos, voxel_size)
 
-        sampled_edge_index = knn_graph(sampled_points.squeeze(0), k=3, loop=False).T
+        sampled_edge_index = knn_graph(sampled_points.squeeze(0), k=k, loop=False).T
         sampled_edge_index_by_original = first_indices[sampled_edge_index]
         sampled_senders, sampled_receivers = sampled_edge_index_by_original[:, 0], sampled_edge_index_by_original[:, 1]
 

@@ -37,7 +37,7 @@ def rollout(model, data, metadata, device="cuda"):
             curr_graph.load = data["load"][t].unsqueeze(0)
             # curr_graph.u = data["u"][t].unsqueeze(0)
             pred_u = model.predict(curr_graph.to(device), metadata)
-            curr_graph.u = pred_u[-1:]  # advance to last prediction
+            curr_graph.u = pred_u[-1:].clone()  # advance to last prediction
         pred_u_list.append(pred_u)
 
     pred_u_tensor = torch.cat(pred_u_list, dim=0)[:timesteps]

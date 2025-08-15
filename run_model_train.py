@@ -58,7 +58,7 @@ def train(model, train_dataset, val_dataset, optimizer, run_dir, model_dir, logs
                 optimizer.zero_grad()
                 batch = batch.to(device)
                 start = time.perf_counter()
-                delta = model(batch)
+                delta = model(batch, train_dataset.u_metadata)
                 t_delta = time.perf_counter() - start
 
                 start = time.perf_counter()

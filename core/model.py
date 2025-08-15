@@ -129,13 +129,18 @@ class EncodeProcessDecode(torch.nn.Module):
         delta = (decoded * dt).reshape(-1, self.time_window, self.target_dim).permute(1, 0, 2)
 
         return delta
-    def forward(self, graph):
+    def forward(self, graph, u_metadata):
         if self.include_push_forward :
             with torch.no_grad():
                 norm_u_dot_prev = self._forward(graph.mesh_pos, graph.senders, graph.receivers, graph.node_type, 
                                             graph.u_prev, graph.load_prev)
-            u_dot_prev = self.output_normalizer.inverse(norm_u_dot_prev)[0]
-            pred_u = graph.u_prev + u_dot_prev
+                u_dot_prev = self.output_normalizer.inverse(norm_u_dot_prev)[0]
+                for _, dim_idx, bc_node_type, _ in u_metadata:
+                    # Mask out nodes that are Dirichlet BC for this component
+                    mask = (graph.node_type[:, :, bc_node_type] == 1).squeeze(0)
+                    u_dot_prev[mask, dim_idx] = 0
+                gaussian_noise = torch.normal(torch.zeros_like(u_dot_prev), 0.05 * torch.ones_like(u_dot_prev))
+                pred_u = graph.u_prev + u_dot_prev * (1 + gaussian_noise)
             delta_u = self._forward(graph.mesh_pos, graph.senders, graph.receivers, graph.node_type, 
                                     pred_u, graph.load)
         else :

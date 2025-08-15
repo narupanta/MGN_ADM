@@ -123,7 +123,7 @@ class DatasetMGN(Dataset):
         #split into frames
         if self.split_frames :
             frames = []
-            u_curr_noised = add_noise(u_curr, self.noise_level, mesh_pos, senders, receivers, self.u_metadata)
+            u_curr_noised = add_noise(u_curr, self.noise_level, mesh_pos, senders, receivers, node_type, self.u_metadata)
             for t in range(u_curr.shape[0]) :
                 frame_data = {
                         "mesh_pos": mesh_pos.unsqueeze(0),
@@ -148,14 +148,15 @@ class DatasetMGN(Dataset):
 
     def get_name(self, idx):
         return self.file_name_list[idx]
-def add_noise(data, noise_level, mesh_pos, senders, receivers, metadata) :
-    for _, index, _, frame_type in metadata :
+def add_noise(data, noise_level, mesh_pos, senders, receivers, node_type, metadata) :
+    for _, index, dbc_at_node, frame_type in metadata :
+        noise_mask = node_type[:, dbc_at_node] == 1
         if frame_type == "move" :
             edge_lengths = (mesh_pos[senders] - mesh_pos[receivers]).norm(dim=-1)
             avg_edge_length = edge_lengths.mean()
-            data[:, :, index] = data[:, :, index] + avg_edge_length * noise_level * torch.randn_like(data[:, :, index])
+            data[:,  ~noise_mask, index] = data[:, ~noise_mask, index] + avg_edge_length * noise_level * torch.randn_like(data[:, ~noise_mask, index])
         elif frame_type == "fixed" :
-            data[:, :, index] = data[:, :, index] + data[:, :, index].std() * noise_level * torch.randn_like(data[:, :, index])
+            data[:,  ~noise_mask, index] = data[:, ~noise_mask, index] + data[:, :, index].std() * noise_level * torch.randn_like(data[:, ~noise_mask, index])
         else :
             raise "frame_type invalid"
     return data

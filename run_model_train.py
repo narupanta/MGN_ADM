@@ -6,7 +6,7 @@ from tqdm import tqdm
 import time
 import torch
 from torch_geometric.loader import DataLoader
-
+from core.postprocessing import export_to_xdmf
 from core.datasetclass import DatasetMGN
 from core.model import EncodeProcessDecode
 from core.rollout import rollout
@@ -121,6 +121,14 @@ def train(model, train_dataset, val_dataset, optimizer, run_dir, model_dir, logs
                 model.save_model(model_dir)
                 torch.save(optimizer.state_dict(), os.path.join(model_dir, "optimizer_state_dict.pth"))
                 best_val_loss = avg_val_loss
+                export_to_xdmf(
+                    mesh_pos=output["mesh_pos"].detach().cpu().numpy(),
+                    cells=output["cells"].detach().cpu().numpy(),
+                    pred_u=output["pred_u"].detach().cpu().numpy(),
+                    gt_u=output["gt_u"].detach().cpu().numpy(),
+                    save_path=Path("/home/y0113799/Hiwi/MGN_ADM/rollouts/lpbf3D/c")
+                )
+                print(torch.sqrt(torch.mean((output["pred_u"] - output["gt_u"])**2)))
                 logger.info("Checkpoint saved (best model so far).")
 
 
